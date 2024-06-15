@@ -26,6 +26,7 @@ PACKAGE_NAME = "ghtopdep"
 CACHE_DIR = appdirs.user_cache_dir(PACKAGE_NAME)
 NEXT_BUTTON_SELECTOR = "#dependents > div.paginate-container > div > a"
 ITEM_SELECTOR = "#dependents > div.Box > div.flex-items-center"
+TOTAL_DEPENDENTS_SELECTOR = "#dependents > div.Box > div.Box-header a.btn-link"
 REPO_SELECTOR = "span > a.text-bold"
 STARS_SELECTOR = "div > span:nth-child(1)"
 GITHUB_URL = "https://github.com"
@@ -90,7 +91,7 @@ def readable_stars(repos):
     return repos
 
 
-def show_result(repos, total_repos_count, more_than_zero_count, destinations, table):
+def show_result(repos, total_repos_count, more_than_zero_count, destinations, table, total_repos_count_with_private):
     if table:
         if repos:
             repos = readable_stars(repos)
@@ -100,7 +101,12 @@ def show_result(repos, total_repos_count, more_than_zero_count, destinations, ta
         else:
             click.echo("Doesn't find any {0} that match search request".format(destinations))
     else:
-        click.echo(json.dumps(repos))
+        click.echo(json.dumps({'repos': repos, 'count': {
+            'total': total_repos_count_with_private,
+            'public': total_repos_count,
+            'private': total_repos_count_with_private - total_repos_count,
+            'more_than_zero_star': more_than_zero_count
+        }}))
 
 
 def get_page_url(sess, url, destination):
@@ -189,11 +195,16 @@ def cli(url, repositories, search, table, rows, minstar, report, description, to
 
     page_url = get_page_url(sess, url, destination)
 
+    total_repos_count_with_private = 0
+
     while True:
         response = sess.get(page_url)
         parsed_node = HTMLParser(response.text)
         dependents = parsed_node.css(ITEM_SELECTOR)
         total_repos_count += len(dependents)
+        if total_repos_count_with_private == 0:
+            total = parsed_node.css(TOTAL_DEPENDENTS_SELECTOR)
+            total_repos_count_with_private = int(total[0].text().strip().split("\n")[0].replace(",", ""))
         for dep in dependents:
             repo_stars_list = dep.css(STARS_SELECTOR)
             # only for ghost or private? packages
@@ -248,4 +259,4 @@ def cli(url, repositories, search, table, rows, minstar, report, description, to
             for s in gh.search_code("{0} repo:{1}".format(search, repo_path)):
                 click.echo("{0} with {1} stars".format(s.html_url, repo["stars"]))
     else:
-        show_result(sorted_repos, total_repos_count, more_than_zero_count, destinations, table)
+        show_result(sorted_repos, total_repos_count, more_than_zero_count, destinations, table, total_repos_count_with_private)
