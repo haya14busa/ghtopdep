@@ -91,7 +91,7 @@ def readable_stars(repos):
     return repos
 
 
-def show_result(repos, total_repos_count, more_than_zero_count, destinations, table, total_repos_count_with_private):
+def show_result(repos, total_repos_count, more_than_zero_count, destinations, table, total_repos_count_with_private, owner, repository):
     if table:
         if repos:
             repos = readable_stars(repos)
@@ -101,12 +101,17 @@ def show_result(repos, total_repos_count, more_than_zero_count, destinations, ta
         else:
             click.echo("Doesn't find any {0} that match search request".format(destinations))
     else:
-        click.echo(json.dumps({'repos': repos, 'count': {
-            'total': total_repos_count_with_private,
-            'public': total_repos_count,
-            'private': total_repos_count_with_private - total_repos_count,
-            'more_than_zero_star': more_than_zero_count
-        }}))
+        click.echo(json.dumps({
+            'owner': owner,
+            'repo': repository,
+            'repos': repos,
+            'count': {
+                'total': total_repos_count_with_private,
+                'public': total_repos_count,
+                'private': total_repos_count_with_private - total_repos_count,
+                'more_than_zero_star': more_than_zero_count
+            }
+        }))
 
 
 def get_page_url(sess, url, destination):
@@ -259,4 +264,4 @@ def cli(url, repositories, search, table, rows, minstar, report, description, to
             for s in gh.search_code("{0} repo:{1}".format(search, repo_path)):
                 click.echo("{0} with {1} stars".format(s.html_url, repo["stars"]))
     else:
-        show_result(sorted_repos, total_repos_count, more_than_zero_count, destinations, table, total_repos_count_with_private)
+        show_result(sorted_repos, total_repos_count, more_than_zero_count, destinations, table, total_repos_count_with_private, owner, repository)
