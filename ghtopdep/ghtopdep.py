@@ -209,7 +209,8 @@ def cli(url, repositories, search, table, rows, minstar, report, description, to
         total_repos_count += len(dependents)
         if total_repos_count_with_private == 0:
             total = parsed_node.css(TOTAL_DEPENDENTS_SELECTOR)
-            total_repos_count_with_private = int(total[0].text().strip().split("\n")[0].replace(",", ""))
+            if total:
+                total_repos_count_with_private = int(total[0].text().strip().split("\n")[0].replace(",", ""))
         for dep in dependents:
             repo_stars_list = dep.css(STARS_SELECTOR)
             # only for ghost or private? packages
